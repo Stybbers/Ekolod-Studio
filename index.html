@@ -1,3 +1,81 @@
-<!doctype html><html lang="sv"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ekolod Studio – Öjen</title><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><style>body{margin:0;font:15px system-ui;background:#0c1926;color:#eaf5fa}header{padding:16px 20px;background:#13283a}h1{font-size:22px;margin:0 0 5px}small{color:#b4cbd8}.wrap{display:grid;grid-template-columns:320px 1fr;min-height:calc(100vh - 82px)}aside{padding:20px;background:#142d40}button,input{width:100%;box-sizing:border-box;padding:11px;margin:8px 0;border-radius:7px;border:1px solid #557080}button{background:#177ca2;color:white;font-weight:600;cursor:pointer}button:disabled{opacity:.5}#map{height:calc(100vh - 82px);min-height:440px}p{line-height:1.5}#status{font-size:13px;color:#b4cbd8}.warning{background:#243746;border-left:3px solid #ffbd59;padding:10px;font-size:13px}a{color:#80d9fa}@media(max-width:700px){.wrap{display:flex;flex-direction:column}#map{height:55vh;min-height:360px;order:0}aside{order:1}}</style></head><body><header><h1>🌊 Ekolod Studio · Öjen</h1><small>Njurunda, Sundsvall · Webbversion 0.5 · Verklig kartbakgrund, inga påhittade djup</small></header><div class="wrap"><aside><h3>Djupdata</h3><p>Läs in mätningar från valfritt ekolod som exporterats till CSV. Kolumner: <b>lat, lon, depth</b> (decimalgrader och meter).</p><input type="file" id="file" accept=".csv,text/csv"><button id="demo">Visa exempelpunkt (simulerad)</button><button id="locate">Visa min GPS-position</button><button id="export" disabled>Exportera GeoJSON</button><button id="reset">Rensa mätpunkter</button><p id="status">Inga djupmätningar importerade. Kartan visar geografiskt läge, inte botten.</p><div class="warning">Ej navigationskarta. Exempelpunkten är påhittad och visas separat från riktiga mätningar.</div><h3>Datakällor</h3><p><a href="https://vattenweb.smhi.se/svarwebb/" target="_blank">SMHI sjöregister</a><br><a href="https://www.genesismaps.com/SocialMap/Index" target="_blank">C-MAP Genesis</a></p></aside><div id="map"></div></div><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script>
-(function(){const status=document.getElementById('status');if(typeof L==='undefined'){status.textContent='Kartbiblioteket kunde inte laddas. Öppna filen via en webbserver med internetanslutning.';return;}const map=L.map('map').setView([62.23444,17.27677],13);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap-bidragsgivare',maxZoom:19}).addTo(map);L.marker([62.23444,17.27677]).addTo(map).bindPopup('Öjen, Njurunda – ungefärlig referenspunkt.');let features=[],layer=L.layerGroup().addTo(map);function redraw(){layer.clearLayers();features.forEach(f=>{const [lon,lat]=f.geometry.coordinates;L.circleMarker([lat,lon],{radius:5,color:f.properties.synthetic?'#ffbb44':'#39e0d5',fillOpacity:.9}).bindPopup((f.properties.synthetic?'SIMULERAD – ':'')+'Djup: '+f.properties.depth+' m').addTo(layer)});status.textContent=features.length+' mätpunkter ('+features.filter(x=>x.properties.synthetic).length+' simulerade).';document.getElementById('export').disabled=!features.length;}function add(lat,lon,depth,synthetic){if(![lat,lon,depth].every(Number.isFinite)||Math.abs(lat)>90||Math.abs(lon)>180||depth<0)return;features.push({type:'Feature',geometry:{type:'Point',coordinates:[lon,lat]},properties:{depth,synthetic,unit:'m'}})}document.getElementById('demo').onclick=()=>{add(62.23444,17.27677,8.5,true);redraw()};document.getElementById('locate').onclick=()=>{if(!navigator.geolocation){status.textContent='GPS stöds inte i denna webbläsare.';return;}status.textContent='Hämtar GPS-position…';navigator.geolocation.getCurrentPosition(p=>{L.marker([p.coords.latitude,p.coords.longitude]).addTo(map).bindPopup('Din position (GPS)').openPopup();map.setView([p.coords.latitude,p.coords.longitude],14);status.textContent='GPS-position visas. Noggrannhet ca '+Math.round(p.coords.accuracy)+' m.'},e=>{status.textContent='GPS kunde inte hämtas: '+e.message},{enableHighAccuracy:true,timeout:12000})};document.getElementById('reset').onclick=()=>{features=[];redraw()};document.getElementById('export').onclick=()=>{const data=JSON.stringify({type:'FeatureCollection',features},null,2),a=document.createElement('a');a.href=URL.createObjectURL(new Blob([data],{type:'application/geo+json'}));a.download='ojen_matpunkter.geojson';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};document.getElementById('file').onchange=async e=>{const file=e.target.files[0];if(!file)return;const rows=(await file.text()).trim().split(/\r?\n/),sep=rows[0].includes(';')?';':',';const headers=rows.shift().split(sep).map(x=>x.trim().toLowerCase());const ix=['lat','latitude','breddgrad'].map(x=>headers.indexOf(x)).find(x=>x>=0),iy=['lon','lng','longitude','longitud'].map(x=>headers.indexOf(x)).find(x=>x>=0),iz=['depth','djup','depth_m'].map(x=>headers.indexOf(x)).find(x=>x>=0);if([ix,iy,iz].some(x=>x===undefined)){status.textContent='CSV måste ha lat, lon och depth som rubriker.';return;}let before=features.length;for(const row of rows){let parts=row.split(sep);add(Number(parts[ix]?.replace(',','.')),Number(parts[iy]?.replace(',','.')),Number(parts[iz]?.replace(',','.')),false)}redraw();if(features.length>before){map.fitBounds(L.latLngBounds(features.slice(before).map(f=>[f.geometry.coordinates[1],f.geometry.coordinates[0]])),{maxZoom:15,padding:[30,30]})}}})();
+<!doctype html>
+<html lang="sv"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#102b3e"><title>Ekolod Studio 1.1 – Öjen</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+*{box-sizing:border-box}body{margin:0;background:#0d2130;color:#eaf5fa;font:15px system-ui,-apple-system,Arial}
+header{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;background:#102e43;gap:8px}
+h1{font-size:19px;margin:0}small{color:#afcbd9} .pill{font-size:11px;border-radius:20px;padding:6px 9px;background:#26485c}
+.layout{display:grid;grid-template-columns:310px 1fr;height:calc(100dvh - 61px)}
+aside{padding:14px;overflow:auto;background:#153348}#map{height:100%;min-height:420px;background:#abc4b4}
+.panel{padding:13px;border:1px solid #3b6176;border-radius:12px;margin-bottom:12px}
+h2{font-size:15px;margin:0 0 10px}label{display:flex;align-items:center;gap:8px;margin:10px 0;cursor:pointer}
+input[type=checkbox]{accent-color:#55bddb;width:19px;height:19px}
+button{background:#1b86a7;color:white;border:0;border-radius:9px;padding:11px 12px;font:inherit;cursor:pointer;font-weight:650;width:100%;margin:4px 0}
+button.secondary{background:#2b5168}p{line-height:1.45;margin:7px 0} .muted{color:#b5d0dc;font-size:12px}
+.warn{border-left:4px solid #e9bd6d;background:#34434a;padding:10px;font-size:12px;line-height:1.5;border-radius:5px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:7px}.stat{padding:9px;background:#214458;border-radius:9px}.stat b{display:block;font-size:20px}
+.legend{height:13px;border-radius:8px;background:linear-gradient(to right,#91d9d0,#4cb2d0,#2787b7,#1d5b98,#193c73,#112b52)}
+.legendlabels{display:flex;justify-content:space-between;font-size:11px;color:#c8dce7}
+a{color:#8edcf5}.leaflet-popup-content{color:#19384c}
+@media(max-width:760px){.layout{display:flex;flex-direction:column;height:auto}#map{height:58dvh;min-height:360px;order:0}aside{order:1;overflow:visible}header{padding:10px 12px}h1{font-size:17px}}
+</style></head>
+<body><header><div><h1>🌊 Ekolod Studio <span style="font-weight:400;color:#b8d7e4">1.1</span></h1><small>Öjen · Njurunda · inspelningar 2020–2021</small></div><span class="pill">FÖRHANDSVERSION</span></header>
+<div class="layout"><aside>
+<section class="panel"><h2>Öjen – djupkarta</h2><div class="stats">
+<div class="stat"><span class="muted">Inspelningar</span><b>32</b></div><div class="stat"><span class="muted">Mätposter</span><b>133 283</b></div>
+<div class="stat"><span class="muted">Lägsta kandidat</span><b>0,55</b><span class="muted">meter*</span></div>
+<div class="stat"><span class="muted">Högsta kandidat</span><b>31,82</b><span class="muted">meter*</span></div></div>
+<p class="muted">*Djupvärdena är preliminärt tolkade från ACU, ännu inte oberoende verifierade. Inspelningar från ett annat område kring 63,34° N, 18,97° Ö hålls separat från Öjen.</p></section>
+<section class="panel"><h2>Kartlager</h2>
+<label><input type="checkbox" id="depth" checked>Färgad djupmodell och 2 m-kurvor</label>
+<label><input type="checkbox" id="points">Uppmätta punkter (glesad visning)</label>
+<label><input type="checkbox" id="tracks" checked>Mätspår</label>
+<div class="legend"></div><div class="legendlabels"><span>0 m</span><span>8</span><span>16</span><span>24</span><span>32 m</span></div>
+<p class="muted">Djupytan visas endast inom 65 m från uppmätta spår och där interpolation är möjlig. Vita linjer är uppskattade 2-meterskurvor.</p>
+<button id="locate">📍 Visa min GPS-position</button><button class="secondary" id="home">Visa hela mätområdet</button>
+</section>
+<section class="panel"><h2>Export</h2><a href="measurements_preliminary.csv" download><button>⬇ Alla mätposter (CSV)</button></a>
+<a href="points.geojson" download><button class="secondary">⬇ Kartpunkter (GeoJSON)</button></a>
+<a href="depth_overlay.png" download><button class="secondary">⬇ Djupmodell (PNG)</button></a>
+<a href="other_area_measurements_preliminary.csv" download><button class="secondary">⬇ Separata mätningar (CSV)</button></a><p class="muted">GeoJSON innehåller var åttonde mätpunkt för smidig mobilvisning. CSV innehåller samtliga preliminära poster.</p></section>
+<div class="warn"><b>Inte för navigation.</b> Kartan visar preliminärt avkodade Humminbird-data. Djupmodellens interpolering är en uppskattning, inte uppmätta djup mellan spåren. Kartunderlaget och djupen behöver kvalitetskontrolleras.</div>
+<p class="muted" id="status">Laddar kartlager …</p>
+</aside><div id="map" aria-label="Interaktiv karta över Öjen"></div></div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(function(){
+const status=document.getElementById('status');
+if(!window.L){status.textContent='Kartbiblioteket kunde inte laddas. Kontrollera internetanslutningen.';return;}
+const bounds=[[62.225509094238284, 17.234450744628905], [62.24462564086914, 17.310404373168947]];
+const map=L.map('map',{preferCanvas:true}).fitBounds(bounds,{padding:[15,15]});
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap-bidragsgivare',maxZoom:19}).addTo(map);
+const overlay=L.imageOverlay('depth_overlay.png',bounds,{opacity:.83,interactive:false}).addTo(map);
+const points=L.layerGroup(),tracks=L.layerGroup().addTo(map);
+let visiblePoints=false,visibleTracks=true,rows=[];
+function refresh(){
+ if(document.getElementById('depth').checked)overlay.addTo(map);else map.removeLayer(overlay);
+ if(document.getElementById('points').checked)points.addTo(map);else map.removeLayer(points);
+ if(document.getElementById('tracks').checked)tracks.addTo(map);else map.removeLayer(tracks);
+}
+['depth','points','tracks'].forEach(id=>document.getElementById(id).addEventListener('change',refresh));
+document.getElementById('home').onclick=()=>map.fitBounds(bounds,{padding:[15,15]});
+document.getElementById('locate').onclick=()=>{
+ map.locate({setView:true,maxZoom:15,enableHighAccuracy:true});
+};
+map.on('locationfound',e=>{L.circleMarker(e.latlng,{radius:8,color:'white',weight:3,fillColor:'#1976ff',fillOpacity:1}).addTo(map).bindPopup('Din GPS-position (ungefärlig)').openPopup();});
+map.on('locationerror',e=>alert('GPS kunde inte läsas: '+e.message));
+fetch('points.geojson').then(r=>{if(!r.ok)throw Error('HTTP '+r.status);return r.json()}).then(g=>{
+ const bySource={};
+ g.features.forEach(f=>{
+ const [lon,lat]=f.geometry.coordinates;const pr=f.properties;
+ if(!bySource[pr.source])bySource[pr.source]=[];
+ bySource[pr.source].push([lat,lon]);
+ L.circleMarker([lat,lon],{radius:2.5,color:'#ffda77',weight:0,fillOpacity:.75,fillColor:'#ffda77'}).bindPopup('<b>'+pr.source+'</b><br>Preliminärt djupvärde: '+pr.depth_candidate_m+' m<br>Post: '+pr.post).addTo(points);
+ });
+ Object.entries(bySource).forEach(([name,line])=>L.polyline(line,{color:'#ffc466',weight:2,opacity:.88}).bindPopup('Mätspår: '+name).addTo(tracks));
+ status.textContent='Kartlager inlästa: '+g.features.length.toLocaleString('sv-SE')+' visningspunkter från '+Object.keys(bySource).length+' inspelningar.';
+ refresh();
+}).catch(err=>{status.textContent='Kunde inte läsa kartdata: '+err.message+'. Öppna via GitHub Pages, inte lokal filvisning.'});
+})();
 </script></body></html>

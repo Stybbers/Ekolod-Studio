@@ -1,25 +1,9 @@
-# Ekolod Studio – Öjen (GitHub Pages)
+# Ekolod Studio 1.1 – Öjen
 
-Statisk kartvisare för Öjen, Njurunda. **Inga verifierade djupdata ingår.** Kartbakgrund från OpenStreetMap; kartbibliotek Leaflet via CDN. Internet behövs för bakgrundskartan.
+133,283 preliminära djupkandidater från 32 inspelningar vid Öjen. Denna uppdatering lade till 8,919 mätposter från 21070900, 21070901 och 21071900.
 
-## Publicera på GitHub Pages
+21070700.ACU (3,822 poster) ligger i ett annat geografiskt område och är separat i `other_area_measurements_preliminary.csv`. 21070902.acd har ännu ingen uppladdad 21070902.ACU och är därför inte inkluderad. 21070500.ACU var redan inkluderad i version 1.0.
 
-1. Logga in på https://github.com och skapa ett **Public** repository, till exempel `ekolod-studio`.
-2. Välj **Add file → Upload files**, ladda upp `index.html` från detta paket i repositoryts rot och klicka **Commit changes**.
-3. Öppna repositoryts **Settings → Pages**.
-4. Under **Build and deployment**: välj **Deploy from a branch**, `main` och `/ (root)` och spara.
-5. När GitHub visar webbplatsens adress, öppna den i Safari. Normalt ser den ut som `https://DITT-ANVANDARNAMN.github.io/ekolod-studio/`.
+Ladda upp alla filerna i ZIP-arkivet i roten av GitHub Pages-repositoryt och ersätt äldre filer. Obs: GitHub Pages gör mätspåren offentliga.
 
-Du behöver inte lägga upp README-filen, men den är praktisk att behålla. Publiceringen kan ta några minuter. Kontrollera Pages-sidan för faktisk adress och publiceringsstatus.
-
-## Funktioner
-
-- OpenStreetMap-bakgrund, ungefärligt centrerad på Öjen.
-- Import av CSV med `lat,lon,depth` i WGS84 decimalgrader och meter.
-- Visa importerade mätpunkter, rensa och exportera GeoJSON.
-- En tydligt markerad **simulerad** exempelpunkt.
-- GPS-knapp som ber om tillåtelse i Safari (HTTPS krävs).
-
-## Begränsningar
-
-Detta är en offentlig prototyp, inte en privat kartdelningstjänst. Filer som publiceras i ett publikt GitHub-repository kan läsas av andra. Importerade CSV-filer behandlas i webbläsaren och laddas inte upp av denna prototyp. Ingen serverlagring, djupinterpolering, ACU-import eller offlinefunktion ingår. Använd inte för navigation.
+Djupen är preliminärt avkodade och inte verifierade. Interpolation begränsad till 65 m från närmaste mätpunkt och till konvexa höljet. Inte för navigation.
